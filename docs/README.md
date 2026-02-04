@@ -189,7 +189,11 @@ Read about concepts, guides, and API documentation on [kubeai.org](https://www.k
 
 [![KubeAI Star history Chart](https://api.star-history.com/svg?repos=kubeai-project/kubeai&type=Date)](https://star-history.com/#kubeai-project/kubeai&Date)
 
-Let us know about features you are interested in seeing or reach out with questions. [Visit our Discord channel](https://discord.gg/JeXhcmjZVm) to join the discussion!
+Let us know about features you are interested in seeing or reach out with questions.
+
+You can also reach the maintainers of this project at:
+* [Slack channel](https://join.slack.com/t/kubeai-project)
+* [Discord channel (archived)](https://discord.gg/JeXhcmjZVm)
 
 Or just reach out on LinkedIn if you want to connect:
 
