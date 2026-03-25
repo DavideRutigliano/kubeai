@@ -59,6 +59,8 @@ func TestProxy(t *testing.T) {
 
 	// Send request number 1
 	sendRequests(t, &wg, m.Name, nil, 1, http.StatusOK, "", "request 1")
+	// Add a small delay for connections to settle.
+	time.Sleep(500 * time.Millisecond)
 
 	requireModelReplicas(t, m, 1, "Replicas should be scaled up to 1 to process messaging request", 5*time.Second)
 	requireModelPods(t, m, 1, "Pod should be created for the messaging request", 5*time.Second)
@@ -70,12 +72,16 @@ func TestProxy(t *testing.T) {
 	// Ensure the deployment is autoscaled past 1.
 	// Simulate the backend processing the request.
 	sendRequests(t, &wg, m.Name, nil, 2, http.StatusOK, "", "request 2,3")
+	// Add a small delay for connections to settle.
+	time.Sleep(500 * time.Millisecond)
 	requireModelReplicas(t, m, 2, "Replicas should be scaled up to 2 to process pending messaging request", autoscaleUpWait)
 	requireModelPods(t, m, 2, "2 Pods should be created for the messaging requests", 5*time.Second)
 	markAllModelPodsReady(t, m)
 
 	// Make sure deployment will not be scaled past max (3).
 	sendRequests(t, &wg, m.Name, nil, 2, http.StatusOK, "", "request 4,5")
+	// Add a small delay for connections to settle.
+	time.Sleep(500 * time.Millisecond)
 	require.Never(t, func() bool {
 		assert.NoError(t, testK8sClient.Get(testCtx, client.ObjectKeyFromObject(m), m))
 		return *m.Spec.Replicas > *m.Spec.MaxReplicas
