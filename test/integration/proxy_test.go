@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	v1 "github.com/kubeai-project/kubeai/api/k8s/v1"
 	"github.com/kubeai-project/kubeai/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -59,35 +60,30 @@ func TestProxy(t *testing.T) {
 
 	// Send request number 1
 	sendRequests(t, &wg, m.Name, nil, 1, http.StatusOK, "", "request 1")
-	// Add a small delay for connections to settle.
-	time.Sleep(500 * time.Millisecond)
 
 	requireModelReplicas(t, m, 1, "Replicas should be scaled up to 1 to process messaging request", 5*time.Second)
 	requireModelPods(t, m, 1, "Pod should be created for the messaging request", 5*time.Second)
 	markAllModelPodsReady(t, m)
-	closeChannels(backendComplete, 1)
+	completeBackendRequests(backendComplete, 1)
 	require.Equal(t, int32(1), totalBackendRequests.Load(), "ensure the request made its way to the backend")
 
 	const autoscaleUpWait = 25 * time.Second
 	// Ensure the deployment is autoscaled past 1.
 	// Simulate the backend processing the request.
 	sendRequests(t, &wg, m.Name, nil, 2, http.StatusOK, "", "request 2,3")
-	// Add a small delay for connections to settle.
-	time.Sleep(500 * time.Millisecond)
 	requireModelReplicas(t, m, 2, "Replicas should be scaled up to 2 to process pending messaging request", autoscaleUpWait)
 	requireModelPods(t, m, 2, "2 Pods should be created for the messaging requests", 5*time.Second)
 	markAllModelPodsReady(t, m)
 
 	// Make sure deployment will not be scaled past max (3).
 	sendRequests(t, &wg, m.Name, nil, 2, http.StatusOK, "", "request 4,5")
-	// Add a small delay for connections to settle.
-	time.Sleep(500 * time.Millisecond)
 	require.Never(t, func() bool {
-		assert.NoError(t, testK8sClient.Get(testCtx, client.ObjectKeyFromObject(m), m))
-		return *m.Spec.Replicas > *m.Spec.MaxReplicas
+		got := &v1.Model{}
+		assert.NoError(t, testK8sClient.Get(testCtx, client.ObjectKeyFromObject(m), got))
+		return *got.Spec.Replicas > *got.Spec.MaxReplicas
 	}, autoscaleUpWait, time.Second/10, "Replicas should not be scaled past MaxReplicas")
 
-	closeChannels(backendComplete, 4)
+	completeBackendRequests(backendComplete, 4)
 	require.Equal(t, int32(5), totalBackendRequests.Load(), "ensure all the requests made their way to the backend")
 
 	// Ensure the deployment is autoscaled back down to MinReplicas.

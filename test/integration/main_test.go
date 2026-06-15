@@ -162,7 +162,7 @@ func initTest(t *testing.T, cfg config.System) {
 func baseSysCfg(t *testing.T) config.System {
 	return config.System{
 		MetricsAddr:   "127.0.0.1:8080",
-		HealthAddress: "127.0.0.1:8081",
+		HealthAddress: "127.0.0.1:0",
 		SecretNames: config.SecretNames{
 			Huggingface: "huggingface",
 			AWS:         "aws",

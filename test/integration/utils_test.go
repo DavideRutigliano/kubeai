@@ -91,15 +91,14 @@ func updateAllModelPods(t *testing.T, m *v1.Model, modify func(*corev1.Pod) bool
 
 func requireModelReplicas(t *testing.T, m *v1.Model, expectedReplicas int32, msg string, after time.Duration) {
 	require.EventuallyWithT(t, func(t *assert.CollectT) {
-		if !assert.NoError(t, testK8sClient.Get(testCtx, client.ObjectKeyFromObject(m), m)) {
+		got := &v1.Model{}
+		if !assert.NoError(t, testK8sClient.Get(testCtx, client.ObjectKeyFromObject(m), got)) {
 			return
 		}
-		//jsn, _ := json.MarshalIndent(m, "", "  ")
-		//fmt.Println(string(jsn))
-		if !assert.NotNil(t, m.Spec.Replicas) {
+		if !assert.NotNil(t, got.Spec.Replicas) {
 			return
 		}
-		assert.Equal(t, expectedReplicas, *m.Spec.Replicas)
+		assert.Equal(t, expectedReplicas, *got.Spec.Replicas)
 	}, after, time.Second/10, "Model Replicas should match: "+msg)
 }
 

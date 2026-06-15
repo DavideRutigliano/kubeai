@@ -26,9 +26,6 @@ func TestExternalMode(t *testing.T) {
 		require.Contains(t, err.Error(), "refused")
 	})
 
-	// Add a small delay for connections to settle.
-	time.Sleep(500 * time.Millisecond)
-
 	t.Run("HeadlessServiceCreatedAndDeleted", func(t *testing.T) {
 		m := modelForTest(t)
 		m.Name = "test-external-model"
@@ -60,9 +57,6 @@ func TestExternalMode(t *testing.T) {
 
 		require.NoError(t, testK8sClient.Delete(testCtx, m))
 	})
-
-	// Add a small delay for connections to settle.
-	time.Sleep(500 * time.Millisecond)
 
 	t.Run("MinReplicasZeroWarns", func(t *testing.T) {
 		m := modelForTest(t)
