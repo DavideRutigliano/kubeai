@@ -1,0 +1,36 @@
+name: Check Generated Files
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  check-generated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Regenerate manifests and code
+        run: make manifests generate
+
+      - name: Check for uncommitted changes in generated files
+        run: |
+          if ! git diff --exit-code; then
+            echo "Generated files are out of date. Run 'make manifests generate' and commit the result."
+            exit 1
+          fi
