@@ -75,7 +75,7 @@ vet: ## Run go vet against code.
 # Use RUN=TestName to run specific integration tests.
 .PHONY: test-unit
 test-unit: fmt vet
-	go test -v ./internal/... $(if $(RUN),-run $(RUN),) -coverprofile cover.unit.out
+	go test -v ./internal/... ./api/... $(if $(RUN),-run $(RUN),) -coverprofile cover.unit.out
 
 # Use RUN=TestName to run specific integration tests.
 .PHONY: test-integration
