@@ -56,6 +56,9 @@ func (s *System) DefaultAndValidate() error {
 	}
 
 	if s.GatewayAPI.Enabled {
+		if s.Proxy.Mode != ProxyModeExternal {
+			return errors.New("gatewayAPI.enabled requires proxy.mode=external")
+		}
 		if s.GatewayAPI.InferencePoolName == "" {
 			return errors.New("gatewayAPI.inferencePoolName is required when gatewayAPI.enabled is true")
 		}

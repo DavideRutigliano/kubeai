@@ -189,6 +189,7 @@ func TestGatewayAPIConfig(t *testing.T) {
 
 	t.Run("enabled_all_fields", func(t *testing.T) {
 		sys := base()
+		sys.Proxy = config.Proxy{Mode: config.ProxyModeExternal}
 		sys.GatewayAPI = config.GatewayAPI{
 			Enabled:               true,
 			InferencePoolName:     "kubeai-pool",
@@ -200,6 +201,7 @@ func TestGatewayAPIConfig(t *testing.T) {
 
 	t.Run("enabled_default_port", func(t *testing.T) {
 		sys := base()
+		sys.Proxy = config.Proxy{Mode: config.ProxyModeExternal}
 		sys.GatewayAPI = config.GatewayAPI{
 			Enabled:               true,
 			InferencePoolName:     "kubeai-pool",
@@ -209,8 +211,19 @@ func TestGatewayAPIConfig(t *testing.T) {
 		require.Equal(t, int32(9002), sys.GatewayAPI.EndpointPickerPort)
 	})
 
+	t.Run("enabled_requires_external_proxy_mode", func(t *testing.T) {
+		sys := base()
+		sys.GatewayAPI = config.GatewayAPI{
+			Enabled:               true,
+			InferencePoolName:     "kubeai-pool",
+			EndpointPickerService: "epp-svc",
+		}
+		require.ErrorContains(t, sys.DefaultAndValidate(), "proxy.mode=external")
+	})
+
 	t.Run("enabled_missing_pool_name", func(t *testing.T) {
 		sys := base()
+		sys.Proxy = config.Proxy{Mode: config.ProxyModeExternal}
 		sys.GatewayAPI = config.GatewayAPI{
 			Enabled:               true,
 			EndpointPickerService: "epp-svc",
@@ -220,6 +233,7 @@ func TestGatewayAPIConfig(t *testing.T) {
 
 	t.Run("enabled_missing_epp_service", func(t *testing.T) {
 		sys := base()
+		sys.Proxy = config.Proxy{Mode: config.ProxyModeExternal}
 		sys.GatewayAPI = config.GatewayAPI{
 			Enabled:           true,
 			InferencePoolName: "kubeai-pool",
