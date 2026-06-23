@@ -70,6 +70,7 @@ type ModelReconciler struct {
 	ModelLoaders            config.ModelLoading
 	ModelRollouts           config.ModelRollouts
 	EngineRegistry          *EngineRegistry
+	SourceRegistry          *SourceRegistry
 }
 
 func (r *ModelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, resErr error) {
@@ -213,6 +214,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ModelReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.SourceRegistry = NewSourceRegistry(r.SecretNames)
 	r.EngineRegistry = NewEngineRegistry(EngineConfig{
 		AllowPodAddressOverride: r.AllowPodAddressOverride,
 		ModelServerPods:         r.ModelServerPods,
@@ -345,7 +347,7 @@ type ModelConfig struct {
 func (r *ModelReconciler) getModelConfig(model *kubeaiv1.Model) (ModelConfig, error) {
 	var result ModelConfig
 
-	src, err := r.parseModelSource(model.Spec.URL)
+	src, err := parseModelSource(model.Spec.URL, r.SourceRegistry)
 	if err != nil {
 		return result, fmt.Errorf("parsing model source: %w", err)
 	}

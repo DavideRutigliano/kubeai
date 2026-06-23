@@ -17,30 +17,69 @@ type modelSource struct {
 	url modelURL
 }
 
-func (r *ModelReconciler) parseModelSource(urlStr string) (modelSource, error) {
+// ModelSourceProvider is the port for providing pod additions based on model URL scheme.
+type ModelSourceProvider interface {
+	PodAdditions(u modelURL) *modelSourcePodAdditions
+}
+
+type SourceRegistry struct {
+	providers map[string]ModelSourceProvider
+}
+
+func NewSourceRegistry(secretNames config.SecretNames) *SourceRegistry {
+	return &SourceRegistry{
+		providers: map[string]ModelSourceProvider{
+			"s3":  &s3SourceProvider{secretName: secretNames.AWS},
+			"gs":  &gcsSourceProvider{secretName: secretNames.GCP},
+			"oss": &ossSourceProvider{secretName: secretNames.Alibaba},
+			"hf":  &hfSourceProvider{secretName: secretNames.Huggingface},
+			"pvc": &pvcSourceProvider{},
+		},
+	}
+}
+
+func (reg *SourceRegistry) Get(scheme string) ModelSourceProvider {
+	if p, ok := reg.providers[scheme]; ok {
+		return p
+	}
+	return &emptySourceProvider{}
+}
+
+type s3SourceProvider struct{ secretName string }
+type gcsSourceProvider struct{ secretName string }
+type ossSourceProvider struct{ secretName string }
+type hfSourceProvider struct{ secretName string }
+type pvcSourceProvider struct{}
+type emptySourceProvider struct{}
+
+func (p *s3SourceProvider) PodAdditions(_ modelURL) *modelSourcePodAdditions {
+	return authForS3(p.secretName)
+}
+func (p *gcsSourceProvider) PodAdditions(_ modelURL) *modelSourcePodAdditions {
+	return authForGCS(p.secretName)
+}
+func (p *ossSourceProvider) PodAdditions(_ modelURL) *modelSourcePodAdditions {
+	return authForOSS(p.secretName)
+}
+func (p *hfSourceProvider) PodAdditions(_ modelURL) *modelSourcePodAdditions {
+	return authForHuggingfaceHub(p.secretName)
+}
+func (p *pvcSourceProvider) PodAdditions(u modelURL) *modelSourcePodAdditions {
+	return pvcPodAdditions(u)
+}
+func (p *emptySourceProvider) PodAdditions(_ modelURL) *modelSourcePodAdditions {
+	return &modelSourcePodAdditions{}
+}
+
+func parseModelSource(urlStr string, registry *SourceRegistry) (modelSource, error) {
 	u, err := parseModelURL(urlStr)
 	if err != nil {
 		return modelSource{}, err
 	}
-	src := modelSource{
-		url: u,
-	}
-
-	switch {
-	case u.scheme == "gs":
-		src.modelSourcePodAdditions = authForGCS(r.SecretNames.GCP)
-	case u.scheme == "oss":
-		src.modelSourcePodAdditions = authForOSS(r.SecretNames.Alibaba)
-	case u.scheme == "s3":
-		src.modelSourcePodAdditions = authForS3(r.SecretNames.AWS)
-	case u.scheme == "hf":
-		src.modelSourcePodAdditions = authForHuggingfaceHub(r.SecretNames.Huggingface)
-	case u.scheme == "pvc":
-		src.modelSourcePodAdditions = pvcPodAdditions(u)
-	default:
-		src.modelSourcePodAdditions = &modelSourcePodAdditions{}
-	}
-	return src, nil
+	return modelSource{
+		url:                  u,
+		modelSourcePodAdditions: registry.Get(u.scheme).PodAdditions(u),
+	}, nil
 }
 
 type modelSourcePodAdditions struct {

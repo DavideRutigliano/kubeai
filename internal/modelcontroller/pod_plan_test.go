@@ -45,7 +45,7 @@ func Test_calculatePodPlan(t *testing.T) {
 		},
 	}
 
-	src, err := r.parseModelSource(model.Spec.URL)
+	src, err := parseModelSource(model.Spec.URL, NewSourceRegistry(config.SecretNames{}))
 	require.NoError(t, err)
 	modelConfig := ModelConfig{
 		ResourceProfile: config.ResourceProfile{
